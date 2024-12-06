@@ -34,6 +34,8 @@
       <div class="battery-status">
         <h3>Battery Status</h3>
         <p>🔋 Battery Level: <strong>{{ batteryLevel }}</strong>/5</p>
+        <p>⚡ Battery Voltage: <strong>{{ batteryVoltage }} V</strong></p>
+
       </div>
       <div class="sun-info">
         <h3>Sunrise & Sunset</h3>
@@ -55,6 +57,7 @@ const city = route.params.city;
 const batteryLevel = Math.floor(Math.random() * 5) + 1; // Фиктивный уровень заряда
 const temperature = 20;
 const humidity = 60;
+const batteryVoltage = (Math.random() * 1.5 + 3.5).toFixed(2); // Фиктивное напряжение (от 3.5 до 5.0 вольт)
 
 // Определение времени суток (день/ночь)
 const currentHour = new Date().getHours();
