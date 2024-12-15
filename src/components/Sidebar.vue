@@ -8,24 +8,21 @@
       active-text-color="#4F46E5"
       router
     >
-      <el-menu-item index="/">
-        <router-link to="/" class="menu-link">
-          Home
-        </router-link>
-      </el-menu-item>
+      <el-menu-item index="/">Home</el-menu-item>
+      <el-menu-item index="/weather/Lora">Lora</el-menu-item>
+      <el-menu-item index="/weather/Enschede">Enschede</el-menu-item>
+      <el-menu-item index="/weather/Wierden">Wierden</el-menu-item>
+      <el-menu-item index="/weather/Gronau">Gronau</el-menu-item>
+      <el-menu-item index="/locations">Locations</el-menu-item>
 
-      <el-menu-item index="/locations">
-        <router-link to="/locations" class="menu-link">
-          Locations
-        </router-link>
-      </el-menu-item>
     </el-menu>
+
   </div>
 </template>
 
 <script setup>
 import { useRoute } from 'vue-router';
-
+import { computed } from 'vue';
 const route = useRoute();
 const activeMenu = route.path; // Динамически определяем активное меню
 </script>

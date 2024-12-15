@@ -1,23 +1,5 @@
 <template>
-  <div>
-    <!-- Карточки городов -->
-    <el-row :gutter="20">
-      <el-col
-        :key="city.name"
-        v-for="city in cities"
-        :span="6"
-        @click="goToWeather(city.name)"
-        style="cursor: pointer;"
-      >
-        <el-card shadow="hover">
-          <h3>{{ city.name }}</h3>
-          <p>Time: {{ getTime() }}</p>
-          <p>Date: {{ getDate() }}</p>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- Карта -->
+  <div class="page-container">
     <div class="map-container">
       <h3>Overall Sensor Locations</h3>
       <div id="map" style="height: 450px; width: 100%;"></div>
@@ -31,13 +13,7 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-// Список городов
-const cities = [
-  { name: "Enschede (our sensor)" },
-  { name: "Enschede" },
-  { name: "Gronau" },
-  { name: "Wierden" },
-];
+
 
 // Координаты сенсоров
 const sensorLocations = [
@@ -48,27 +24,9 @@ const sensorLocations = [
   { lat: 52.368913, lng: 6.602899, title: "Sensor 5" },
 ];
 
-// Функция для перехода на страницу с погодой
-const goToWeather = (cityName) => {
-  router.push({ path: `/weather/${cityName}` });
-};
 
-// Функция для получения текущего времени
-const getTime = () => {
-  const now = new Date();
-  return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-};
 
-// Функция для получения текущей даты
-const getDate = () => {
-  const now = new Date();
-  return now.toLocaleDateString([], {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-};
+
 
 // Инициализация карты
 onMounted(() => {
@@ -90,21 +48,24 @@ onMounted(() => {
 
 <style scoped>
 h3 {
+  color: black;
   margin-bottom: 10px;
 }
 
 .map-container {
-  margin-top: 30px;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
+    margin: 0; /* Remove any default margin */
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    height: 100vh; /* Make it span the full height of the viewport */
+    box-sizing: border-box; /* Include padding in height calculations */
+  }
 
-.map-container h3 {
-  margin-bottom: 15px;
-  font-size: 20px;
-  font-weight: bold;
-}
+  .page-container h3 {
+    margin-bottom: 15px;
+    font-size: 20px;
+    font-weight: bold;
+  }
 </style>
