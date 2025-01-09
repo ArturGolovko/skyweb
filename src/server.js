@@ -57,9 +57,34 @@ app.get('/weather', async (req, res) => {
             deviceId = 'lht-gronau';
             break;
         case 'Lora':
-            console.log('Matched case: Lora');
-            deviceId = 'lora';
-            break;
+            try {
+                const pool = await sql.connect(dbConfig);
+
+                const query = `
+                    SELECT 
+                        lora.message_id,
+                        lora.illumination,
+                        lora.pressure,
+                        lora.temperature,
+                        lora.rssi AS connection_status,
+                        lora.timestamp,
+                        lora.humidity
+                    FROM dbo.lora lora
+                    ORDER BY lora.timestamp DESC;
+                `;
+
+                console.log('Executing query for Enschede (our sensor):', query);
+
+                const result = await pool.request().query(query);
+
+                res.json(result.recordset);
+                pool.close();
+                return; // Выходим из функции, т.к. запрос обработан
+            } catch (err) {
+                console.error('Ошибка запроса для Enschede (our sensor):', err.message);
+                res.status(500).json({ error: 'Ошибка сервера при получении данных для Enschede (our sensor)' });
+                return;
+            }
         default:
             return res.status(400).json({ error: 'Invalid location' });
     }
@@ -97,6 +122,94 @@ app.get('/weather', async (req, res) => {
     } catch (err) {
         console.error('Ошибка запроса:', err.message);
         res.status(500).send('Ошибка сервера при получении данных о погоде');
+    }
+});
+
+
+app.get('/weather/:location', async (req, res) => {
+    const { location } = req.params;
+    console.log('Received location:', location);
+    const { parameter, timeRange } = req.query;
+
+    // Определяем deviceId на основе местоположения
+    let deviceId;
+    let isLoraSensor = false;
+
+    switch (location) {
+        case 'Enschede':
+            deviceId = 'lht-saxion';
+            break;
+        case 'Wierden':
+            deviceId = 'lht-wierden';
+            break;
+        case 'Gronau':
+            deviceId = 'lht-gronau';
+            break;
+        case 'Lora':
+            isLoraSensor = true; // Помечаем, что данные берутся из таблицы `dbo.lora`
+            break;
+        default:
+            return res.status(400).json({ error: 'Invalid location' });
+    }
+
+    // Определяем временной диапазон для фильтрации данных
+    let timeCondition;
+    switch (timeRange) {
+        case '1day':
+            timeCondition = 'timestamp >= DATEADD(day, -1, GETDATE())';
+            break;
+        case '3days':
+            timeCondition = 'timestamp >= DATEADD(day, -3, GETDATE())';
+            break;
+        case '7days':
+            timeCondition = 'timestamp >= DATEADD(day, -7, GETDATE())';
+            break;
+        default:
+            return res.status(400).json({ error: 'Invalid time range' });
+    }
+
+    try {
+        const pool = await sql.connect(dbConfig);
+
+        let query;
+
+        // Строим запрос в зависимости от типа сенсора
+        if (isLoraSensor) {
+            // Запрос для нового сенсора `Lora`
+            query = `
+                SELECT
+                    message_id,
+                    ${parameter} AS parameter_value,
+                    timestamp
+                FROM dbo.lora
+                WHERE ${timeCondition}
+                ORDER BY timestamp ASC;
+            `;
+        } else {
+            // Запрос для старых сенсоров
+            query = `
+                SELECT um.device_id,
+                       um.message_id,
+                       lht.${parameter} AS parameter_value,
+                       um.timestamp
+                FROM [wet].[uplink_messages] um
+                JOIN [wet].[lht_data] lht
+                ON um.message_id = lht.message_id
+                WHERE um.device_id = @deviceId AND ${timeCondition}
+                ORDER BY um.timestamp ASC;
+            `;
+        }
+
+        // Выполняем запрос к базе данных
+        const result = await pool.request()
+            .input('deviceId', sql.NVarChar, deviceId) // `deviceId` только для старых сенсоров
+            .query(query);
+
+        res.json(result.recordset); // Возвращаем результат
+        pool.close();
+    } catch (err) {
+        console.error('Error:', err.message);
+        res.status(500).send('Server error while fetching weather data');
     }
 });
 

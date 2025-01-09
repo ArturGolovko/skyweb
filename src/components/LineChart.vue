@@ -36,6 +36,7 @@
   
   <style scoped>
   canvas {
+    color: #1a1a1a;
     width: 100%;
     height: 400px;
   }

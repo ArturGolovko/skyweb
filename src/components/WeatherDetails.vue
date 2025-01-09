@@ -3,10 +3,11 @@
     <!-- Графики в самом верху -->
     <div class="chart-container">
       <div class="charts-grid">
-        <WeatherChart title="Temperature" :parameter="'temperature'" />
-        <WeatherChart title="Humidity" :parameter="'humidity'" />
-        <WeatherChart title="Pressure" :parameter="'pressure'" />
-        <WeatherChart title="Light" :parameter="'light'" />
+        <WeatherChart title="Temperature" parameter="temperature" :location="city" />
+        <WeatherChart title="Humidity" parameter="humidity" :location="city" />
+        <WeatherChart title="Pressure" parameter="pressure" :location="city" />
+        <WeatherChart title="Lighting Level" parameter="lighting_level" :location="city" />
+
       </div>
     </div>
 

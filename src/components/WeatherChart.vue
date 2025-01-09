@@ -3,20 +3,21 @@
     <h3>{{ title }}</h3>
     <div class="timeframe-buttons">
       <el-button
-        v-for="(time, index) in timeframes"
-        :key="index"
-        @click="setTimeframe(time.value)"
-        :type="timeframe === time.value ? 'primary' : 'default'"
+          v-for="(time, index) in timeframes"
+          :key="index"
+          @click="fetchAndSetChartData(time.value)"
+          :type="timeframe === time.value ? 'primary' : 'default'"
       >
         {{ time.label }}
       </el-button>
     </div>
-    <line-chart :chart-data="chartData" :chart-options="chartOptions" />
+    <line-chart v-if="chartData.datasets.length" :chart-data="chartData" :chart-options="chartOptions" />
+    <p v-else>Loading data...</p>
   </div>
 </template>
 
 <script>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import LineChart from './LineChart.vue';
 
 export default {
@@ -24,17 +25,18 @@ export default {
     LineChart,
   },
   props: {
-    title: String,
-    parameter: String,
+    title: String, // Название графика
+    parameter: String, // 'temperature', 'humidity', etc.
+    location: String,
   },
   setup(props) {
     const timeframes = [
-      { label: '24 hours', value: 24 },
-      { label: '3 days', value: 72 },
-      { label: '7 days', value: 168 },
+      { label: '24 hours', value: '1day' },
+      { label: '3 days', value: '3days' },
+      { label: '7 days', value: '7days' },
     ];
 
-    const timeframe = ref(24);
+    const timeframe = ref('1day'); // Начальное значение (последние 24 часа)
     const chartData = ref({
       labels: [],
       datasets: [],
@@ -50,40 +52,65 @@ export default {
       },
     };
 
-    const generateChartData = () => {
-      const labels = Array.from(
-        { length: timeframe.value },
-        (_, i) => `Hour ${i + 1}`
-      );
-      const data = Array.from({ length: timeframe.value }, () =>
-        Math.floor(Math.random() * 100)
-      );
+    // Функция для запроса данных с сервера
+    const fetchAndSetChartData = async (selectedTimeframe) => {
+      timeframe.value = selectedTimeframe;
 
-      chartData.value = {
-        labels,
-        datasets: [
-          {
-            label: props.parameter,
-            data,
-            borderColor: '#42A5F5',
-            backgroundColor: 'rgba(66, 165, 245, 0.2)',
-          },
-        ],
-      };
+      try {
+        console.log('Location in the frontend:', props.location);
+        const response = await fetch(
+            `http://localhost:3000/weather/${props.location}?parameter=${props.parameter === 'lighting_level' ? 'illumination' : props.parameter}&timeRange=${selectedTimeframe}`
+        );
+        if (!response.ok) throw new Error('Failed to fetch chart data');
+
+        const data = await response.json();
+
+        // Если параметр 'lighting_level', преобразуем illumination в проценты
+        const transformedData =
+            props.parameter === 'lighting_level'
+                ? data.map((entry) => ({
+                  ...entry,
+                  parameter_value: entry.parameter_value
+                      ? Math.log(entry.parameter_value) * 0.9
+                      : 0,
+                }))
+                : data;
+
+        // Обновляем данные графика
+        chartData.value = {
+          labels: data.map((entry) =>
+              new Date(entry.timestamp).toLocaleString('en-US', {
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                hour12: false, // Использовать 24-часовой формат
+              })
+          ), // Временные метки
+          datasets: [
+            {
+              label: props.parameter,
+              data: data.map((entry) => entry.parameter_value), // Значения параметра
+              borderColor: '#42A5F5',
+              backgroundColor: 'rgba(66, 165, 245, 0.2)',
+              fill: true,
+            },
+          ],
+        };
+
+      } catch (error) {
+        console.error('Error fetching chart data:', error);
+      }
     };
 
-    const setTimeframe = (newTimeframe) => {
-      timeframe.value = newTimeframe;
-    };
-
-    watch(timeframe, generateChartData, { immediate: true });
+    // Загружаем данные при монтировании компонента
+    fetchAndSetChartData(timeframe.value);
 
     return {
       timeframes,
       timeframe,
       chartData,
       chartOptions,
-      setTimeframe,
+      fetchAndSetChartData,
     };
   },
 };
@@ -91,6 +118,7 @@ export default {
 
 <style scoped>
 .chart-container {
+  color: #1a1a1a;
   padding: 20px;
   background: #f9f9f9;
   border-radius: 8px;
@@ -98,6 +126,7 @@ export default {
 }
 
 .timeframe-buttons {
+  color: #1a1a1a;
   display: flex;
   gap: 10px;
   margin-bottom: 10px;
